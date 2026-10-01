@@ -1,4 +1,36 @@
 {
-    "osztalyok": [],
-    "diakok": []
-  }
+  "osztalyok": [
+    {
+      "id": 1,
+      "nev": "12.A",
+      "szak": "Informatika",
+      "evfolyam": 12
+    },
+    {
+      "id": 2,
+      "nev": "11.B",
+      "szak": "Gazdasági informatika",
+      "evfolyam": 11
+    }
+  ],
+  "diakok": [
+    {
+      "id": 1,
+      "nev": "Kiss Péter",
+      "email": "kiss.peter@gmail.com",
+      "osztaly_id": 1
+    },
+    {
+      "id": 2,
+      "nev": "Nagy Anna",
+      "email": "nagy.anna@gmail.com",
+      "osztaly_id": 1
+    },
+    {
+      "id": 3,
+      "nev": "Tóth Bence",
+      "email": "toth.bence@gmail.com",
+      "osztaly_id": 2
+    }
+  ]
+}
