@@ -1,49 +1,164 @@
+require('dotenv').config();
+
 const express = require('express');
-const fs = require ('fs/promises')
+const mysql = require('mysql2/promise');
+
 const app = express();
 const port = 8080;
 
 app.use(express.json());
 
-const fajlNev = './adatok.json';
 
-app.get('/osztalyok', async (req, res) => {
-    const adat = await 
-    fs.readFile(fajlNev, 'utf8');
-    const json = JSON.parse(adat);
-
-    res.json(json.osztalyok);
+const pool = mysql.createPool({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
-app.post('/osztalyok', async (req, res) => {
-    const adat = await fs.readFile (fajlNev, 'utf8');
-    const json = JSON.parse(adat);
-    const ujOsztaly = {
-        id: json.osztalyok.length + 1,
-        nev: req.body.nev, 
-        szak: req.body.szak,
-        evfolyam: req.body.evfolyam
-    };
-    json.osztalyok.push(ujOsztaly);
-
-    await fs.readFile(fajlNev, JSON.stringify(json, null, 2));
-    res.status(201).json(ujOsztaly);
-});
 
 app.get('/', (req, res) => {
-  res.send('Hello World from Express!');
+    res.json({
+        uzenet: 'Kezdő Iskolai REST API fut',
+        elerheto_vegpontok: [
+            'GET /api/osztalyok',
+            'GET /api/osztalyok/:id',
+            'GET /api/diakok',
+            'GET /api/diakok/:id',
+            'POST /api/osztalyok',
+            'POST /api/diakok'
+        ]
+    });
 });
 
-app.post('/osztalyok', (req, res) => {
-  console.log(req.body);
+app.get('/api/osztalyok', async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            'SELECT * FROM osztalyok'
+        );
 
-  res.status(201).json({
-    uzenet: 'Adat fogadva',
+        res.json(rows);
 
-    adat: req.body
-  });
+    } catch (error) {
+
+        console.log('TELJES HIBA:');
+        console.log(error);
+
+        res.status(500).json({
+            hiba: String(error)
+        });
+    }
 });
+
+
+
+app.get('/api/osztalyok/:id', async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            'SELECT * FROM osztalyok WHERE id = ?',
+            [req.params.id]
+        );
+
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ hiba: error.message });
+    }
+});
+
+
+app.post('/api/osztalyok', async (req, res) => {
+    try {
+        const { nev, szak, evfolyam } = req.body;
+
+        const [result] = await pool.query(
+            'INSERT INTO osztalyok (nev, szak, evfolyam) VALUES (?, ?, ?)',
+            [nev, szak, evfolyam]
+        );
+
+        res.status(201).json({
+            id: result.insertId,
+            nev,
+            szak,
+            evfolyam
+        });
+    } catch (error) {
+        res.status(500).json({ hiba: error.message });
+    }
+});
+
+
+app.get('/api/diakok', async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT
+                diakok.id,
+                diakok.nev,
+                diakok.email,
+                osztalyok.nev AS osztaly_nev,
+                osztalyok.szak,
+                osztalyok.evfolyam
+            FROM diakok
+            INNER JOIN osztalyok
+            ON diakok.osztaly_id = osztalyok.id
+        `);
+
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ hiba: error.message });
+    }
+});
+
+
+app.get('/api/diakok/:id', async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT
+                diakok.id,
+                diakok.nev,
+                diakok.email,
+                osztalyok.nev AS osztaly_nev,
+                osztalyok.szak,
+                osztalyok.evfolyam
+            FROM diakok
+            INNER JOIN osztalyok
+            ON diakok.osztaly_id = osztalyok.id
+            WHERE diakok.id = ?
+        `, [req.params.id]);
+
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ hiba: error.message });
+    }
+});
+
+
+app.post('/api/diakok', async (req, res) => {
+    try {
+        const { nev, email, osztaly_id } = req.body;
+
+        const [result] = await pool.query(
+            'INSERT INTO diakok (nev, email, osztaly_id) VALUES (?, ?, ?)',
+            [nev, email, osztaly_id]
+        );
+
+        res.status(201).json({
+            id: result.insertId,
+            nev,
+            email,
+            osztaly_id
+        });
+    } catch (error) {
+        res.status(500).json({ hiba: error.message });
+    }
+});
+
+
+
 
 app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
+    console.log(`Szerver fut: http://localhost:${port}`);
 });
