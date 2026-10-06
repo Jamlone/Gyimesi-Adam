@@ -1,0 +1,16 @@
+{
+  "name": "workshop-1",
+  "version": "1.0.0",
+  "description": "ITMP Node.js - 1. modul workshop",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.3",
+    "mysql2": "^3.24.5",
+    "nodemon": "^3.1.14"
+  }
+}
